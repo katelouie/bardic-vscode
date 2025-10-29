@@ -1,0 +1,480 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Bard",
+  "scopeName": "source.bard",
+  "patterns": [
+    {
+      "include": "#passage-header"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#python-block-new"
+    },
+    {
+      "include": "#python-block-legacy"
+    },
+    {
+      "include": "#control-flow-new"
+    },
+    {
+      "include": "#control-flow-legacy"
+    },
+    {
+      "include": "#import-statement"
+    },
+    {
+      "include": "#directive-include"
+    },
+    {
+      "include": "#directive-render"
+    },
+    {
+      "include": "#directive-input"
+    },
+    {
+      "include": "#variable-assignment"
+    },
+    {
+      "include": "#choice"
+    },
+    {
+      "include": "#immediate-jump"
+    },
+    {
+      "include": "#glue-operator"
+    },
+    {
+      "include": "#inline-tag"
+    },
+    {
+      "include": "#expression"
+    }
+  ],
+  "repository": {
+    "passage-header": {
+      "name": "markup.heading.bard",
+      "match": "^(::)\\s+(.+?)(?:\\s+(\\^\\w+))?$",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.passage.bard"
+        },
+        "2": {
+          "name": "entity.name.function.bard"
+        },
+        "3": {
+          "name": "constant.language.tag.bard"
+        }
+      }
+    },
+    "python-block-new": {
+      "name": "meta.embedded.block.python.bard",
+      "begin": "^\\s*(@py)(:)\\s*$",
+      "end": "^\\s*(@endpy)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.flow.bard"
+        },
+        "2": {
+          "name": "punctuation.separator.colon.bard"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.flow.bard"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "python-block-legacy": {
+      "name": "meta.embedded.block.python.bard",
+      "begin": "^\\s*(<<)(py)(>>)\\s*$",
+      "end": "^\\s*(>>)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.begin.bard"
+        },
+        "2": {
+          "name": "keyword.control.flow.bard"
+        },
+        "3": {
+          "name": "punctuation.definition.block.begin.bard"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.end.bard"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "control-flow-new": {
+      "patterns": [
+        {
+          "begin": "^\\s*(@if|@elif)\\s+",
+          "end": "(:)(?=\\s*(?://.*)?$)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.conditional.bard"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.separator.colon.bard"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "match": "^\\s*(@else)(:)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.conditional.bard"
+            },
+            "2": {
+              "name": "punctuation.separator.colon.bard"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(@endif)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.conditional.bard"
+            }
+          }
+        },
+        {
+          "begin": "^\\s*(@for)\\s+",
+          "end": "(:)(?=\\s*(?://.*)?$)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.loop.bard"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.separator.colon.bard"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "match": "^\\s*(@endfor)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.loop.bard"
+            }
+          }
+        }
+      ]
+    },
+    "control-flow-legacy": {
+      "patterns": [
+        {
+          "begin": "^\\s*(<<)(if|elif)\\s+",
+          "end": "(>>)(?=\\s*(?://.*)?$)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.block.begin.bard"
+            },
+            "2": {
+              "name": "keyword.control.conditional.bard"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.block.end.bard"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "match": "^\\s*(<<)(else)(>>)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.block.begin.bard"
+            },
+            "2": {
+              "name": "keyword.control.conditional.bard"
+            },
+            "3": {
+              "name": "punctuation.definition.block.end.bard"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(<<)(endif)(>>)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.block.begin.bard"
+            },
+            "2": {
+              "name": "keyword.control.conditional.bard"
+            },
+            "3": {
+              "name": "punctuation.definition.block.end.bard"
+            }
+          }
+        },
+        {
+          "begin": "^\\s*(<<)(for)\\s+",
+          "end": "(>>)(?=\\s*(?://.*)?$)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.block.begin.bard"
+            },
+            "2": {
+              "name": "keyword.control.loop.bard"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.block.end.bard"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "match": "^\\s*(<<)(endfor)(>>)\\s*(?://.*)?$",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.block.begin.bard"
+            },
+            "2": {
+              "name": "keyword.control.loop.bard"
+            },
+            "3": {
+              "name": "punctuation.definition.block.end.bard"
+            }
+          }
+        }
+      ]
+    },
+    "import-statement": {
+      "name": "meta.import.python.bard",
+      "begin": "^\\s*(import|from)\\s+",
+      "end": "$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.import.python"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "directive-include": {
+      "match": "^\\s*(@include)\\s+(.+?)(?://.*)?$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.import.bard"
+        },
+        "2": {
+          "name": "string.unquoted.path.bard"
+        }
+      }
+    },
+    "directive-render": {
+      "begin": "^\\s*(@render)\\s+",
+      "end": "(?=//)|$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.directive.bard"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "directive-input": {
+      "begin": "^\\s*(@input)\\s+",
+      "end": "(?=//)|$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.directive.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "(\\w+)\\s*(=)\\s*(\"[^\"]*\"|'[^']*')",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.bard"
+            },
+            "2": {
+              "name": "keyword.operator.assignment.bard"
+            },
+            "3": {
+              "name": "string.quoted.bard"
+            }
+          }
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.bard",
+          "match": "#.*$"
+        },
+        {
+          "name": "comment.line.double-slash.bard",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "variable-assignment": {
+      "begin": "^\\s*(~)\\s+",
+      "end": "(?=//)|$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.operator.assignment.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "\\b(\\w+)(?=[.\\s+=\\-*/%]|$)",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.bard"
+            }
+          }
+        },
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "expression-content": {
+      "patterns": [
+        {
+          "name": "constant.numeric.bard",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        },
+        {
+          "name": "string.quoted.double.bard",
+          "match": "\"[^\"]*\""
+        },
+        {
+          "name": "string.quoted.single.bard",
+          "match": "'[^']*'"
+        },
+        {
+          "name": "constant.language.bard",
+          "match": "\\b(True|False|None)\\b"
+        }
+      ]
+    },
+    "choice": {
+      "match": "^\\s*([+*])\\s*(?:(\\{)([^}]+)(\\})\\s*)?\\[([^\\]]+)\\]\\s*(->)\\s*([\\w.]+)",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.choice.bard"
+        },
+        "2": {
+          "name": "punctuation.definition.condition.begin.bard"
+        },
+        "3": {
+          "name": "meta.embedded.expression.bard",
+          "patterns": [
+            {
+              "include": "#expression-content"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.condition.end.bard"
+        },
+        "5": {
+          "name": "string.unquoted.choice-text.bard"
+        },
+        "6": {
+          "name": "keyword.operator.arrow.bard"
+        },
+        "7": {
+          "name": "entity.name.function.target.bard"
+        }
+      }
+    },
+    "immediate-jump": {
+      "match": "^\\s*(->)\\s+([\\w.]+)(?:\\s+(?://.*)?)?$",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.arrow.bard"
+        },
+        "2": {
+          "name": "entity.name.function.target.bard"
+        }
+      }
+    },
+    "glue-operator": {
+      "match": "<>",
+      "name": "keyword.operator.glue.bard"
+    },
+    "inline-tag": {
+      "match": "\\^\\w+",
+      "name": "constant.language.tag.bard"
+    },
+    "expression": {
+      "name": "meta.embedded.expression.bard",
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.expression.begin.bard"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.expression.end.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "(?<![=!<>])(:)([.0-9<>^#+ ,_a-z%]+)(?=})",
+          "captures": {
+            "1": {
+              "name": "punctuation.separator.format-spec.bard"
+            },
+            "2": {
+              "name": "string.other.format-spec.bard"
+            }
+          }
+        },
+        {
+          "include": "source.python"
+        }
+      ]
+    }
+  }
+}

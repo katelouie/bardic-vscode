@@ -1,0 +1,47 @@
+{
+  "Simple If Block": {
+    "prefix": "if",
+    "body": [
+      "@if ${1:condition}:",
+      "\t${2:content}",
+      "@endif"
+    ],
+    "description": "Simple @if block"
+  },
+  "Full If Block": {
+    "prefix": "iff",
+    "body": [
+      "@if ${1:condition}:",
+      "\t${2:content}",
+      "@elif ${3:condition2}:",
+      "\t${4:content2}",
+      "@else:",
+      "\t${5:content3}",
+      "@endif"
+    ],
+    "description": "Full @if/@elif/@else block"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": [
+      "@for ${1:item} in ${2:items}:",
+      "\t${3:content}",
+      "@endfor"
+    ],
+    "description": "For loop block"
+  },
+  "Choice": {
+    "prefix": "choice",
+    "body": [
+      "+ [${1:text}] -> ${2:target}"
+    ],
+    "description": "Regular choice"
+  },
+  "Conditional Choice": {
+    "prefix": "cchoice",
+    "body": [
+      "+ {${1:condition}} [${2:text}] -> ${3:target}"
+    ],
+    "description": "Conditional choice"
+  }
+}

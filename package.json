@@ -1,0 +1,45 @@
+{
+  "name": "bardic",
+  "displayName": "Bardic Language Support",
+  "description": "Syntax highlighting for Bardic interactive fiction files",
+  "version": "0.1.0",
+  "publisher": "katelouie",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/katelouie/bardic"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "bardic",
+    "interactive fiction",
+    "syntax highlighting"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "bard",
+        "aliases": ["Bard", "bardic"],
+        "extensions": [".bard"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "bard",
+        "scopeName": "source.bard",
+        "path": "./syntaxes/bard.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "bard",
+        "path": "./snippets/bard.json"
+      }
+    ]
+  }
+}
