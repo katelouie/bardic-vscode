@@ -43,5 +43,33 @@
       "+ {${1:condition}} [${2:text}] -> ${3:target}"
     ],
     "description": "Conditional choice"
+  },
+  "Start Directive": {
+    "prefix": "start",
+    "body": [
+      "@start ${1:PassageName}"
+    ],
+    "description": "Set story start passage"
+  },
+  "Metadata Block": {
+    "prefix": "metadata",
+    "body": [
+      "@metadata",
+      "\ttitle: ${1:Story Title}",
+      "\tauthor: ${2:Author Name}",
+      "\tversion: ${3:1.0.0}",
+      "\tstory_id: ${4:story_id}",
+      "\tdescription: ${5:Description}",
+      "$0"
+    ],
+    "description": "Metadata block"
+  },
+  "Passage Header": {
+    "prefix": "passage",
+    "body": [
+      ":: ${1:PassageName}",
+      "$0"
+    ],
+    "description": "Passage header"
   }
 }

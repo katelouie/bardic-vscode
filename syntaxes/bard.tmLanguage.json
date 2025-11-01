@@ -25,6 +25,12 @@
       "include": "#import-statement"
     },
     {
+      "include": "#directive-start"
+    },
+    {
+      "include": "#metadata-block"
+    },
+    {
       "include": "#directive-include"
     },
     {
@@ -55,7 +61,7 @@
   "repository": {
     "passage-header": {
       "name": "markup.heading.bard",
-      "match": "^(::)\\s+(.+?)(?:\\s+(\\^\\w+))?$",
+      "match": "^(::)\\s+([^/^\\n]+?)(?:\\s+(\\^\\w+))?(?:\\s*(//.*?))?$",
       "captures": {
         "1": {
           "name": "keyword.operator.passage.bard"
@@ -65,6 +71,9 @@
         },
         "3": {
           "name": "constant.language.tag.bard"
+        },
+        "4": {
+          "name": "comment.line.double-slash.bard"
         }
       }
     },
@@ -114,6 +123,32 @@
       "patterns": [
         {
           "include": "source.python"
+        }
+      ]
+    },
+    "metadata-block": {
+      "name": "meta.embedded.block.metadata.bard",
+      "begin": "^(@metadata)\\s*$",
+      "end": "^(?=\\S)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.directive.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "^\\s+([a-zA-Z_][a-zA-Z0-9_]*)(:)\\s*(.*)$",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.bard"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.bard"
+            },
+            "3": {
+              "name": "string.unquoted.bard"
+            }
+          }
         }
       ]
     },
@@ -290,6 +325,17 @@
           "include": "source.python"
         }
       ]
+    },
+    "directive-start": {
+      "match": "^\\s*(@start)\\s+(\\S+)(?:\\s*//.*)?$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.directive.bard"
+        },
+        "2": {
+          "name": "entity.name.function.target.bard"
+        }
+      }
     },
     "directive-include": {
       "match": "^\\s*(@include)\\s+(.+?)(?://.*)?$",
