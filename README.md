@@ -11,7 +11,7 @@ Syntax highlighting and code snippets for Bardic interactive fiction files (.bar
   - Control flow (`@if`, `@for`, etc.)
   - Python code blocks with full Python syntax
   - Comments (full-line `#` and inline `//`)
-  - Directives (`@include`, `@render`, `@input`)
+  - Directives (`@include`, `@render`, `@input`, `@state`, `@metadata`)
   - And more!
 
 - **Code Snippets** for rapid development:
@@ -30,6 +30,10 @@ Type snippet triggers and press Tab to insert code templates with smart tab stop
 ## About Bardic
 
 Bardic is a Python-first interactive fiction engine for modern web applications.
+
+- [Bardic on PyPI](https://pypi.org/project/bardic/)
+- [Bardic on GitHub](https://github.com/katelouie/bardic)
+- [Documentation](https://github.com/katelouie/bardic/blob/main/docs/)
 
 ---
 
