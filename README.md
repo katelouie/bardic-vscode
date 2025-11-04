@@ -1,6 +1,10 @@
 # Bardic Language Support
 
+[![VSCode Marketplace](https://img.shields.io/visual-studio-marketplace/v/katelouie.bardic)](https://marketplace.visualstudio.com/items?itemName=katelouie.bardic)
+
 Syntax highlighting and code snippets for Bardic interactive fiction files (.bard).
+
+Download on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=katelouie.bardic).
 
 ## Features
 
