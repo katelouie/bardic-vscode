@@ -77,3 +77,9 @@ my_other_variable = "string"
 @for h in range(health):
     My health is {h} now!
 @endfor
+
++ [Continue] -> NewPassage
+
+:: NewPassage
+
+This is a new passage

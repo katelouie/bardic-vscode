@@ -25,7 +25,38 @@
     "interactive fiction",
     "syntax highlighting"
   ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:bard"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  },
   "contributes": {
+    "commands": [
+      {
+        "command": "bardic.showGraph",
+        "title": "Bardic: Show Story Graph",
+        "icon": "$(graph)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == bard",
+          "command": "bardic.showGraph",
+          "group": "navigation"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "bard",
