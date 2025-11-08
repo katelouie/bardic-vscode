@@ -442,8 +442,10 @@
       ]
     },
     "choice": {
-      "match": "^\\s*([+*])\\s*(?:(\\{)([^}]+)(\\})\\s*)?\\[([^\\]]+)\\]\\s*(->)\\s*([\\w.]+)",
-      "captures": {
+      "name": "meta.choice.bard",
+      "begin": "^\\s*([+*])\\s*(?:(\\{)([^}]+)(\\})\\s*)?(\\[)",
+      "end": "(\\])\\s*(->)\\s*([\\w.]+)",
+      "beginCaptures": {
         "1": {
           "name": "keyword.operator.choice.bard"
         },
@@ -454,7 +456,7 @@
           "name": "meta.embedded.expression.bard",
           "patterns": [
             {
-              "include": "#expression-content"
+              "include": "source.python"
             }
           ]
         },
@@ -462,15 +464,29 @@
           "name": "punctuation.definition.condition.end.bard"
         },
         "5": {
-          "name": "string.unquoted.choice-text.bard"
+          "name": "punctuation.definition.choice-text.begin.bard"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.choice-text.end.bard"
         },
-        "6": {
+        "2": {
           "name": "keyword.operator.arrow.bard"
         },
-        "7": {
+        "3": {
           "name": "entity.name.function.target.bard"
         }
-      }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        },
+        {
+          "name": "string.unquoted.choice-text.bard",
+          "match": "[^{]+"
+        }
+      ]
     },
     "immediate-jump": {
       "match": "^\\s*(->)\\s+([\\w.]+)(?:\\s+(?://.*)?)?$",
@@ -507,6 +523,9 @@
       },
       "patterns": [
         {
+          "include": "#inline-conditional"
+        },
+        {
           "match": "(?<![=!<>])(:)([.0-9<>^#+ ,_a-z%]+)(?=})",
           "captures": {
             "1": {
@@ -517,6 +536,57 @@
             }
           }
         },
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    "inline-conditional": {
+      "name": "meta.inline-conditional.bard",
+      "begin": "([^?]+)(\\?)",
+      "end": "(?=})",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.embedded.expression.bard",
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        "2": {
+          "name": "keyword.operator.ternary.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "(\\|)",
+          "name": "keyword.operator.ternary.bard"
+        },
+        {
+          "include": "#nested-expression"
+        },
+        {
+          "match": "[^{}|]+",
+          "name": "string.unquoted.bard"
+        }
+      ]
+    },
+    "nested-expression": {
+      "name": "meta.nested.expression.bard",
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.expression.begin.bard"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.expression.end.bard"
+        }
+      },
+      "patterns": [
         {
           "include": "source.python"
         }
