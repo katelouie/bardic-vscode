@@ -443,9 +443,8 @@
     },
     "choice": {
       "name": "meta.choice.bard",
-      "begin": "^\\s*([+*])\\s*(?:(\\{)([^}]+)(\\})\\s*)?(\\[)",
-      "end": "(\\])\\s*(->)\\s*([\\w.]+)",
-      "beginCaptures": {
+      "match": "^\\s*([+*])\\s*(?:(\\{)([^}]+)(\\})\\s*)?(\\[)([^\\]]+)(\\])\\s*(->)\\s*([\\w.]+)",
+      "captures": {
         "1": {
           "name": "keyword.operator.choice.bard"
         },
@@ -465,28 +464,25 @@
         },
         "5": {
           "name": "punctuation.definition.choice-text.begin.bard"
-        }
-      },
-      "endCaptures": {
-        "1": {
+        },
+        "6": {
+          "name": "string.unquoted.choice-text.bard",
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        "7": {
           "name": "punctuation.definition.choice-text.end.bard"
         },
-        "2": {
+        "8": {
           "name": "keyword.operator.arrow.bard"
         },
-        "3": {
+        "9": {
           "name": "entity.name.function.target.bard"
         }
-      },
-      "patterns": [
-        {
-          "include": "#expression"
-        },
-        {
-          "name": "string.unquoted.choice-text.bard",
-          "match": "[^{]+"
-        }
-      ]
+      }
     },
     "immediate-jump": {
       "match": "^\\s*(->)\\s+([\\w.]+)(?:\\s+(?://.*)?)?$",

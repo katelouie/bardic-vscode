@@ -1,0 +1,32 @@
+:: Start
+
+This is some regular content before any choices.
+
++ [Simple choice] -> Target1
++ [Another simple choice] -> Target2
+
+More content here.
+
+~ variable = 10
+
+Even more content.
+
++ [Choice with {variable}] -> Target3
+
+After that choice.
+
++ [{variable > 5 ? Good choice | Bad choice}] -> Target4
+
+Final content.
+
+:: Target1
+Target 1 content.
+
+:: Target2
+Target 2 content.
+
+:: Target3
+Target 3 content.
+
+:: Target4
+Target 4 content.

@@ -51,6 +51,11 @@
         "language": "bard",
         "path": "./snippets/bard.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "[bard]": {
+        "editor.wordWrap": "on"
+      }
+    }
   }
 }

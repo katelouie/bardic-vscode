@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 - 2025-11-07
+
+## Fixed
+
+- Fixed choice pattern matching ending bug
+- Set `.bard` files to automatically word wrap
+
 ## 0.2.0 - 2025-11-07
 
 ### Added
