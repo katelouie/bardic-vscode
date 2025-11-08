@@ -18,6 +18,23 @@ Download on the [VS Code Marketplace](https://marketplace.visualstudio.com/items
   - Directives (`@include`, `@render`, `@input`, `@state`, `@metadata`)
   - And more!
 
+### Story Graph Visualization ✨ NEW
+
+Visualize your entire story structure as an interactive graph:
+
+![Story Graph](screenshots/split_graph_view.png)
+
+**Features:**
+
+- **Color-coded connections**: Regular choices (purple), conditional choices (orange), jumps (gold)
+- **Bug detection**: Missing passages highlighted in red, orphaned passages in cyan
+- **Click to navigate**: Click any node to jump to that passage in your code
+- **Export**: Save your graph as PNG or SVG
+- **Stats**: See passage count, choices, and potential issues at a glance
+- **Auto-refresh**: Graph updates when you save your file
+
+**To use:** Open any `.bard` file and click the graph icon in the editor toolbar, or run "Bardic: Show Story Graph" from the command palette.
+
 - **Code Snippets** for rapid development:
   - `if` - Simple if block
   - `iff` - Full if/elif/else block

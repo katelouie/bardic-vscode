@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 - 2025-11-08
+
+## [0.3.0] - 2025-11-08
+
+### Added
+
+- **Interactive Story Graph Visualization**: View your entire story structure as a visual graph
+- **Click to Jump**: Click any passage node to jump to that passage in your code
+- **Color-Coded Edges**:
+  - Purple solid lines for regular choices
+  - Orange dashed lines for conditional choices
+  - Gold thick lines for direct jumps
+- **Missing Passage Detection**: Red nodes highlight passages that are referenced but don't exist (typos/bugs)
+- **Orphan Passage Detection**: Cyan borders on passages that nothing points to (dead code)
+- **Export Graph**: Save your story graph as PNG or SVG
+- **Story Stats**: See passage count, choice count, missing passages, and orphans at a glance
+- **Auto-Refresh**: Graph updates automatically when you save your .bard file
+- **Legend**: Visual guide explaining all the colors and symbols
+
+### Improved
+
+- Word-wrapped node labels for better readability
+- Horizontal edge labels (always readable)
+- Hierarchical auto-layout
+
 ## 0.2.1 - 2025-11-07
 
 ## Fixed

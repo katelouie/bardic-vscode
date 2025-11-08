@@ -641,7 +641,7 @@ export class BardGraphPanel {
                                 background: 'rgba(26, 0, 51, 0.8)',
                                 strokeWidth: 0,
                                 multi: 'html',
-                                align: 'middle'
+                                align: 'horizontal'
                             },
                             dashes: false
                         });
@@ -662,7 +662,7 @@ export class BardGraphPanel {
                                 background: 'rgba(26, 0, 51, 0.8)',
                                 strokeWidth: 0,
                                 multi: 'html',
-                                align: 'middle'
+                                align: 'horizontal'
                             }
                         });
                     }
@@ -680,7 +680,7 @@ export class BardGraphPanel {
                             background: 'rgba(26, 0, 51, 0.8)',
                             strokeWidth: 0,
                             multi: 'html',
-                            align: 'middle'
+                            align: 'horizontal'
                         }
                     });
                 })
