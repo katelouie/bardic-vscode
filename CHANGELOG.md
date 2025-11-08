@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.3.0 - 2025-11-08
+## [Unreleased]
+
+### Added
+
+- **New Snippets:**
+  - `ifel` - If-else block (no elif)
+  - `br` - Section divider comment with dashes
+  - `bigbr` - Major section divider comment with equals signs
 
 ## [0.3.0] - 2025-11-08
 

@@ -37,10 +37,16 @@ Visualize your entire story structure as an interactive graph:
 
 - **Code Snippets** for rapid development:
   - `if` - Simple if block
+  - `ifel` - If-else block (no elif)
   - `iff` - Full if/elif/else block
   - `for` - For loop
   - `choice` - Regular choice
   - `cchoice` - Conditional choice
+  - `passage` - Passage header
+  - `br` - Section divider with dashes
+  - `bigbr` - Major section divider with equals signs
+  - `metadata` - Metadata block
+  - `start` - Start directive
 
 ## Usage
 
