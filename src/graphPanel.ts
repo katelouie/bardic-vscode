@@ -124,10 +124,8 @@ export class BardGraphPanel {
             const line = lines[i];
             const trimmed = line.trim();
 
-            // Skip empty lines
             if (!trimmed) continue;
 
-            // Track @py blocks (skip their contents)
             if (trimmed.startsWith('@py:') || trimmed === '@py') {
                 inPyBlock = true;
                 continue;
@@ -140,33 +138,39 @@ export class BardGraphPanel {
                 continue;
             }
 
-            // Check for passage declaration
-            const passageMatch = /^::\s+([\w.]+)/.exec(trimmed);
+            // Check for passage declaration (with optional parameters)
+            const passageMatch = /^::\s+([\w.]+)(\([^)]*\))?/.exec(trimmed);
             if (passageMatch) {
-                currentPassage = passageMatch[1];
+                const baseName = passageMatch[1];  // Just the name
+                const params = passageMatch[2] || '';  // The (params) part
+                const fullName = baseName + params;  // Full signature
+
+                currentPassage = baseName;  // Use base name as ID
+
                 if (!passages[currentPassage]) {
-                    passages[currentPassage] = { choices: [] };
+                    passages[currentPassage] = {
+                        choices: [],
+                        fullName: fullName  // Store full name for display
+                    };
                 }
                 continue;
             }
 
-            // Only process edges if we're in a passage
             if (!currentPassage) continue;
 
-            // Pattern 1: Direct jump (-> Target)
-            // Matches: -> Target, ->Target, -> Some.Target
+            // All the choice/jump patterns stay the same
+            // (they already just extract the base name without params)
+
             const jumpMatch = /^->\s+([\w.]+)/.exec(trimmed);
             if (jumpMatch) {
                 passages[currentPassage].choices.push({
-                    text: '→', // Arrow symbol for direct jumps
+                    text: '→',
                     target: jumpMatch[1],
                     isJump: true
                 });
                 continue;
             }
 
-            // Pattern 2: Conditional choice (+ {condition} [text] -> target)
-            // Matches: + {health > 50} [Fight] -> Combat
             const conditionalChoiceMatch = /^[+*]\s+\{[^}]+\}\s+\[(.*?)\]\s+->\s+([\w.]+)/.exec(trimmed);
             if (conditionalChoiceMatch) {
                 passages[currentPassage].choices.push({
@@ -177,8 +181,6 @@ export class BardGraphPanel {
                 continue;
             }
 
-            // Pattern 3: Simple choice (+ [text] -> target)
-            // Matches: + [Continue] -> Next, * [One time] -> Next
             const simpleChoiceMatch = /^[+*]\s+\[(.*?)\]\s+->\s+([\w.]+)/.exec(trimmed);
             if (simpleChoiceMatch) {
                 passages[currentPassage].choices.push({
@@ -189,23 +191,17 @@ export class BardGraphPanel {
                 continue;
             }
 
-            // Pattern 4: Choices/jumps inside @if/@elif/@else blocks
-            // Just check if line contains -> and extract target
-            // This catches: "@if x: -> Target" or indented "-> Target"
             if (trimmed.includes('->')) {
-                // Try to extract target from any line with ->
                 const anyTargetMatch = /->\s+([\w.]+)/.exec(trimmed);
                 if (anyTargetMatch) {
-                    // Check if it looks like a choice with brackets
                     const hasChoice = /\[(.*?)\]/.exec(trimmed);
                     if (hasChoice) {
                         passages[currentPassage].choices.push({
                             text: hasChoice[1],
                             target: anyTargetMatch[1],
-                            isConditional: true // Assume conditional if inside a block
+                            isConditional: true
                         });
                     } else {
-                        // It's a jump
                         passages[currentPassage].choices.push({
                             text: '→',
                             target: anyTargetMatch[1],
@@ -216,16 +212,14 @@ export class BardGraphPanel {
             }
         }
 
-        // Convert to graph format
+        // Rest of the function - creating nodes and edges
         const nodes: any[] = [];
         const edges: any[] = [];
         const passageNames = Object.keys(passages);
 
-        // Track which passages are referenced as targets
         const referencedPassages = new Set<string>();
         const allTargets = new Set<string>();
 
-        // First pass: collect all targets
         passageNames.forEach(passageName => {
             passages[passageName].choices.forEach((choice: any) => {
                 allTargets.add(choice.target);
@@ -235,33 +229,31 @@ export class BardGraphPanel {
             });
         });
 
-        // Find missing passages (referenced but don't exist)
         const missingPassages = Array.from(allTargets).filter(
             target => !passages[target]
         );
 
-        // Find orphan passages (exist but never referenced, except start)
         const startPassage = passageNames[0] || 'Start';
         const orphanPassages = passageNames.filter(
             name => !referencedPassages.has(name) && name !== startPassage
         );
 
         passageNames.forEach(passageName => {
-            // Word-wrap long passage names
-            const wrappedLabel = this._wrapLabel(passageName, 20); // Wrap at ~20 chars
+            const passage = passages[passageName];
+            const displayName = passage.fullName || passageName;  // Use full name with params
+            const wrappedLabel = this._wrapLabel(displayName, 20);
             const isOrphan = orphanPassages.includes(passageName);
 
             nodes.push({
-                id: passageName,
-                label: wrappedLabel,
+                id: passageName,  // ID is base name (for linking)
+                label: wrappedLabel,  // Display includes params
                 title: isOrphan
-                    ? `⚠️ ORPHAN: ${passageName} (nothing points here)`
-                    : `Click to jump to ${passageName}`,
+                    ? `⚠️ ORPHAN: ${displayName} (nothing points here)`
+                    : `Click to jump to ${displayName}`,
                 isOrphan: isOrphan,
                 isMissing: false
             });
 
-            // Deduplicate edges (same source→target)
             const seenTargets = new Set<string>();
 
             passages[passageName].choices.forEach((choice: any) => {
@@ -273,15 +265,10 @@ export class BardGraphPanel {
                     edges.push({
                         from: passageName,
                         to: choice.target,
-                        label: this._wrapEdgeLabel(choice.text, 12),  // ← Wrap at 12 chars
-                        title: choice.text, // Hover shows full text
-                        // Style based on edge type
-                        dashes: choice.isConditional ? [5, 5] : false, // Dashed for conditionals
-                        width: choice.isJump ? 3 : 2, // Thicker for jumps
-                        color: choice.isJump ? {
-                            color: '#d4af37',
-                            highlight: '#f4e4c1'
-                        } : undefined,
+                        label: this._wrapEdgeLabel(choice.text, 12),
+                        title: choice.text,
+                        dashes: choice.isConditional ? [5, 5] : false,
+                        width: choice.isJump ? 3 : 2,
                         isConditional: choice.isConditional,
                         isJump: choice.isJump
                     });
@@ -289,13 +276,12 @@ export class BardGraphPanel {
             });
         });
 
-        // Create nodes for missing passages (red)
         missingPassages.forEach(passageName => {
             const wrappedLabel = this._wrapLabel(passageName, 20);
 
             nodes.push({
                 id: passageName,
-                label: wrappedLabel + '\n⚠️ MISSING',
+                label: wrappedLabel + '\n🚨 MISSING',
                 title: `🚨 MISSING PASSAGE: ${passageName} is referenced but doesn't exist!`,
                 isMissing: true,
                 isOrphan: false
@@ -311,24 +297,154 @@ export class BardGraphPanel {
             return label;
         }
 
-        // Try to break on dots first (for namespaced passages)
-        if (label.includes('.')) {
-            const parts = label.split('.');
-            return parts.join('.\n');
+        // Special handling for parameterized passages: PassageName(param1, param2, optional=default)
+        // Strategy: Split name and params onto separate lines
+        const paramMatch = /^([^(]+)(\(.+\))$/.exec(label);
+        if (paramMatch) {
+            const passageName = paramMatch[1];
+            const params = paramMatch[2];
+
+            // Wrap the passage name first
+            const wrappedName = this._wrapLabel(passageName, maxLength);
+
+            // If params are short enough, add on same line as last name line
+            if (params.length <= maxLength) {
+                const nameLines = wrappedName.split('\n');
+                const lastLine = nameLines[nameLines.length - 1];
+
+                if (lastLine.length + params.length <= maxLength) {
+                    nameLines[nameLines.length - 1] = lastLine + params;
+                    return nameLines.join('\n');
+                } else {
+                    // Params on new line
+                    return wrappedName + '\n' + params;
+                }
+            } else {
+                // Params are long - try to break them nicely
+                // Split params by comma: (param1, param2, key=value)
+                const paramsContent = params.slice(1, -1); // Remove ( and )
+                const paramParts = paramsContent.split(',').map(p => p.trim());
+
+                // If we can fit 2-3 params per line
+                const paramLines: string[] = [];
+                let currentLine = '(';
+
+                for (let i = 0; i < paramParts.length; i++) {
+                    const part = paramParts[i];
+                    const separator = i < paramParts.length - 1 ? ', ' : '';
+                    const testLine = currentLine === '('
+                        ? currentLine + part
+                        : currentLine + ', ' + part;
+
+                    if (testLine.length + separator.length + 1 <= maxLength) { // +1 for closing )
+                        currentLine = testLine;
+                        if (i === paramParts.length - 1) {
+                            currentLine += ')';
+                        }
+                    } else {
+                        // Line is full, start new line
+                        if (currentLine !== '(') {
+                            currentLine += ',';
+                            paramLines.push(currentLine);
+                            currentLine = ' ' + part; // Indent continuation
+                            if (i === paramParts.length - 1) {
+                                currentLine += ')';
+                            }
+                        } else {
+                            // First param is too long, just add it
+                            currentLine = '(' + part;
+                            if (i === paramParts.length - 1) {
+                                currentLine += ')';
+                            }
+                        }
+                    }
+                }
+
+                if (currentLine && currentLine !== '(') {
+                    paramLines.push(currentLine);
+                }
+
+                return wrappedName + '\n' + paramLines.join('\n');
+            }
         }
 
-        // Otherwise, break on capital letters or underscores
+        // Strategy 1: Try breaking on dots first (for namespaces like Chen.Session1.Start)
+        if (label.includes('.')) {
+            const parts = label.split('.');
+            const lines: string[] = [];
+            let currentLine = '';
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const separator = i < parts.length - 1 ? '.' : '';
+
+                // If adding this part would exceed maxLength, start new line
+                if (currentLine && (currentLine + separator + part).length > maxLength) {
+                    lines.push(currentLine + separator);
+                    currentLine = part;
+                } else {
+                    currentLine += (currentLine ? separator : '') + part;
+                }
+            }
+
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+
+            // Check if any individual line is still too long
+            const needsFurtherWrapping = lines.some(line => line.length > maxLength);
+
+            if (!needsFurtherWrapping) {
+                return lines.join('\n');
+            }
+
+            // If lines are still too long, fall through to Strategy 2
+            label = lines.join('.');
+        }
+
+        // Strategy 2: Break on underscores (for names like Chen_Session_Long_Name)
+        if (label.includes('_')) {
+            const parts = label.split('_');
+            const lines: string[] = [];
+            let currentLine = '';
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const separator = i < parts.length - 1 ? '_' : '';
+
+                if (currentLine && (currentLine + separator + part).length > maxLength) {
+                    lines.push(currentLine + separator);
+                    currentLine = part;
+                } else {
+                    currentLine += (currentLine ? separator : '') + part;
+                }
+            }
+
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+
+            // Check if any individual line is still too long
+            const needsFurtherWrapping = lines.some(line => line.length > maxLength);
+
+            if (!needsFurtherWrapping) {
+                return lines.join('\n');
+            }
+        }
+
+        // Strategy 3: Break on capital letters (camelCase or PascalCase)
         const words: string[] = [];
         let currentWord = '';
 
         for (let i = 0; i < label.length; i++) {
             const char = label[i];
 
-            if (char === '_' || (char === char.toUpperCase() && i > 0)) {
+            // Break on capital letter (but not at start)
+            if (char === char.toUpperCase() && char !== char.toLowerCase() && i > 0) {
                 if (currentWord) {
                     words.push(currentWord);
                 }
-                currentWord = char === '_' ? '' : char;
+                currentWord = char;
             } else {
                 currentWord += char;
             }
@@ -338,21 +454,42 @@ export class BardGraphPanel {
             words.push(currentWord);
         }
 
-        // Join words with newlines if needed
-        let result = '';
-        let lineLength = 0;
+        // Combine words into lines that fit maxLength
+        const lines: string[] = [];
+        let currentLine = '';
 
         for (const word of words) {
-            if (lineLength + word.length > maxLength && lineLength > 0) {
-                result += '\n' + word;
-                lineLength = word.length;
+            if (currentLine.length + word.length > maxLength && currentLine.length > 0) {
+                lines.push(currentLine);
+                currentLine = word;
             } else {
-                result += (result ? ' ' : '') + word;
-                lineLength += word.length + 1;
+                currentLine += word;
             }
         }
 
-        return result || label;
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+
+        // Strategy 4: If still too long, hard wrap at maxLength
+        if (lines.some(line => line.length > maxLength)) {
+            const hardWrappedLines: string[] = [];
+
+            for (const line of lines) {
+                if (line.length <= maxLength) {
+                    hardWrappedLines.push(line);
+                } else {
+                    // Break into chunks of maxLength
+                    for (let i = 0; i < line.length; i += maxLength) {
+                        hardWrappedLines.push(line.substring(i, i + maxLength));
+                    }
+                }
+            }
+
+            return hardWrappedLines.join('\n');
+        }
+
+        return lines.join('\n') || label;
     }
 
     private _wrapEdgeLabel(label: string, maxLength: number = 10): string {
@@ -363,6 +500,13 @@ export class BardGraphPanel {
         if (label.length <= maxLength) {
             return label;
         }
+
+        // If label is REALLY long (>60 chars), truncate first
+        const maxTotalLength = 60;
+        if (label.length > maxTotalLength) {
+            label = label.substring(0, maxTotalLength) + '...';
+        }
+
 
         // Split on spaces and wrap
         const words = label.split(' ');
@@ -382,6 +526,11 @@ export class BardGraphPanel {
 
         if (currentLine) {
             lines.push(currentLine);
+        }
+
+        // Limit to 3 lines max
+        if (lines.length > 9) {
+            return lines.slice(0, 9).join('\n') + '...';
         }
 
         return lines.join('\n');

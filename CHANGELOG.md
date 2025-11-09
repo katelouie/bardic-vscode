@@ -4,6 +4,14 @@
 
 ### Added
 
+## [0.4.1] - 2025-11-08
+
+### Added
+
+- Truncate choice text to 60 chars for graph display (or 7 wrapped 12-char lines)
+- Make graph passage names with `.` in them ALSO wrap/break on underscores `_` if the underscore part of the name is too long
+- Parse parameterized passages in graph view
+
 ## [0.4.0] - 2025-11-08
 
 ### Added

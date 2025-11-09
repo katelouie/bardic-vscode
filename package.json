@@ -2,7 +2,7 @@
   "name": "bardic",
   "displayName": "Bardic",
   "description": "Syntax highlighting for Bardic interactive fiction files",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "katelouie",
   "repository": {
     "type": "git",
