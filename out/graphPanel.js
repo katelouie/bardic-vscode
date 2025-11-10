@@ -115,7 +115,8 @@ class BardGraphPanel {
                 if (!passages[currentPassage]) {
                     passages[currentPassage] = {
                         choices: [],
-                        fullName: fullName // Store full name for display
+                        fullName: fullName, // Store full name for display
+                        hasParams: !!params // Track if passage has parameters
                     };
                 }
                 continue;
@@ -201,7 +202,8 @@ class BardGraphPanel {
                     ? `⚠️ ORPHAN: ${displayName} (nothing points here)`
                     : `Click to jump to ${displayName}`,
                 isOrphan: isOrphan,
-                isMissing: false
+                isMissing: false,
+                hasParams: passage.hasParams || false
             });
             const seenTargets = new Set();
             passages[passageName].choices.forEach((choice) => {
@@ -498,18 +500,24 @@ class BardGraphPanel {
             outline: none;
         }
         .control-button {
-            background: #2d1b4e;
+            background: rgba(26, 0, 51, 0.85);
             color: #d4af37;
-            border: 2px solid #d4af37;
-            padding: 8px 16px;
-            margin: 4px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            padding: 4px 8px;
+            margin: 2px;
             cursor: pointer;
-            font-family: Georgia, serif;
-            border-radius: 4px;
-            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+            transition: all 0.15s ease;
+            opacity: 0.9;
         }
         .control-button:hover {
-            background: #3d2b5e;
+            background: rgba(45, 27, 78, 0.95);
+            opacity: 1;
+            border-color: rgba(212, 175, 55, 0.8);
         }
     </style>
 </head>
@@ -517,69 +525,84 @@ class BardGraphPanel {
     <!-- Embed graph data as JSON -->
     <script type="application/json" id="graph-data">${graphDataJson}</script>
 
-    <div id="controls" style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
-        <button onclick="exportAsPNG()" class="control-button">Export PNG</button>
-        <button onclick="exportAsSVG()" class="control-button">Export SVG</button>
+    <div id="controls" style="position: absolute; top: 8px; right: 8px; z-index: 1000; display: flex; gap: 2px;">
+        <button onclick="exportAsPNG()" class="control-button">PNG</button>
+        <button onclick="exportAsSVG()" class="control-button">SVG</button>
     </div>
 
     <div id="stats" style="
         position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(45, 27, 78, 0.95);
-        border: 2px solid #d4af37;
-        padding: 12px;
-        border-radius: 8px;
-        font-family: Georgia, serif;
+        top: 8px;
+        left: 8px;
+        background: rgba(26, 0, 51, 0.85);
+        border: 1px solid rgba(212, 175, 55, 0.5);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #f4e4c1;
-        font-size: 13px;
+        font-size: 9px;
+        line-height: 1.4;
         z-index: 1000;
+        backdrop-filter: blur(4px);
     ">
-        <div style="font-weight: bold; margin-bottom: 8px; color: #d4af37; font-size: 14px;">Story Stats</div>
-        <div>Passages: <span id="passage-count" style="font-weight: bold;">0</span></div>
-        <div>Choices: <span id="choice-count" style="font-weight: bold;">0</span></div>
-        <div style="color: #ff4444;">Missing: <span id="missing-count" style="font-weight: bold;">0</span></div>
-        <div style="color: #66d9ef;">Orphans: <span id="orphan-count" style="font-weight: bold;">0</span></div>
+        <div style="font-weight: 600; margin-bottom: 3px; color: #d4af37; font-size: 10px; opacity: 0.9;">Stats</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="opacity: 0.85; cursor: help;" title="Passages">P: <span id="passage-count" style="font-weight: 600;">0</span></span>
+            <span style="opacity: 0.85; cursor: help;" title="Choices">C: <span id="choice-count" style="font-weight: 600;">0</span></span>
+            <span style="color: #ff4444; opacity: 0.85; cursor: help;" title="Missing Passages">M: <span id="missing-count" style="font-weight: 600;">0</span></span>
+            <span style="color: #66d9ef; opacity: 0.85; cursor: help;" title="Orphan Passages">O: <span id="orphan-count" style="font-weight: 600;">0</span></span>
+        </div>
     </div>
 
     <div id="legend" style="
         position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(45, 27, 78, 0.95);
-        border: 2px solid #d4af37;
-        padding: 12px;
-        border-radius: 8px;
-        font-family: Georgia, serif;
+        bottom: 8px;
+        left: 8px;
+        background: rgba(26, 0, 51, 0.85);
+        border: 1px solid rgba(212, 175, 55, 0.5);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #f4e4c1;
-        font-size: 12px;
+        font-size: 9px;
+        line-height: 1.3;
         z-index: 1000;
+        backdrop-filter: blur(4px);
     ">
-        <div style="font-weight: bold; margin-bottom: 8px; color: #d4af37;">Legend</div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 25px; height: 2px; background: #9b4dca; vertical-align: middle; margin-right: 8px;"></span>
-            <span style="vertical-align: middle;">Choice</span>
+        <div style="font-weight: 600; margin-bottom: 3px; color: #d4af37; font-size: 10px; opacity: 0.9;">Legend</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 2px;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 16px; height: 1.5px; background: #9b4dca;"></span>
+                <span style="opacity: 0.85;">Choice</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 16px; height: 1.5px; background: #ff9f43; border-top: 1.5px dashed #ff9f43;"></span>
+                <span style="opacity: 0.85;">Cond</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 16px; height: 2px; background: #d4af37;"></span>
+                <span style="opacity: 0.85;">Jump</span>
+            </div>
         </div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 25px; height: 2px; background: #ff9f43; vertical-align: middle; margin-right: 8px; border-top: 2px dashed #ff9f43;"></span>
-            <span style="vertical-align: middle;">Conditional</span>
+        <div style="display: flex; gap: 8px; margin-top: 3px; margin-bottom: 2px;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #2d1b4e; border: 1.5px solid #d4af37;"></span>
+                <span style="opacity: 0.85;">Start</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #2d1b4e; border: 1.5px solid #66bb6a;"></span>
+                <span style="opacity: 0.85;">Reuse</span>
+            </div>
         </div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 25px; height: 3px; background: #d4af37; vertical-align: middle; margin-right: 8px;"></span>
-            <span style="vertical-align: middle;">Jump</span>
-        </div>
-        <div style="margin: 8px 0 4px 0; font-size: 11px; font-weight: bold;">Nodes:</div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #d4af37; vertical-align: middle; margin-right: 8px;"></span>
-            <span style="vertical-align: middle;">Start</span>
-        </div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #66d9ef; vertical-align: middle; margin-right: 8px;"></span>
-            <span style="vertical-align: middle;">Orphan</span>
-        </div>
-        <div style="margin: 4px 0;">
-            <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #ff4444; background: #4a0000; vertical-align: middle; margin-right: 8px;"></span>
-            <span style="vertical-align: middle;">Missing</span>
+        <div style="display: flex; gap: 8px; margin-top: 2px;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #1a3a4a; border: 1.5px solid #9b4dca;"></span>
+                <span style="opacity: 0.85;">Orphan</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #4a0000; border: 1.5px solid #ff4444;"></span>
+                <span style="opacity: 0.85;">Miss</span>
+            </div>
         </div>
     </div>
 
@@ -604,21 +627,28 @@ class BardGraphPanel {
             // Create nodes with Bardic styling
             const nodes = new vis.DataSet(
                 graphData.nodes.map(function(node) {
-                    let bgColor = '#2d1b4e';
-                    let borderColor = '#9b4dca';
+                    let bgColor = '#2d1b4e';  // Default purple background
+                    let borderColor = '#9b4dca';  // Default purple border
                     let borderWidth = 2;
                     let fontColor = '#f4e4c1';
 
+                    // Background = warnings/issues
                     if (node.isMissing) {
-                        bgColor = '#4a0000';
-                        borderColor = '#ff4444';
-                        borderWidth = 3;
+                        bgColor = '#4a0000';  // Red background for missing
                         fontColor = '#ffcccc';
                     } else if (node.isOrphan) {
-                        borderColor = '#66d9ef';
+                        bgColor = '#1a3a4a';  // Dark cyan background for orphans
+                    }
+
+                    // Border = passage type (can combine with background warnings)
+                    if (node.isMissing) {
+                        borderColor = '#ff4444';  // Red border for missing
                         borderWidth = 3;
                     } else if (node.id === graphData.startPassage) {
-                        borderColor = '#d4af37';
+                        borderColor = '#d4af37';  // Gold for start
+                        borderWidth = 3;
+                    } else if (node.hasParams) {
+                        borderColor = '#66bb6a';  // Mint green for reusable
                         borderWidth = 3;
                     }
 
@@ -632,12 +662,12 @@ class BardGraphPanel {
                             background: bgColor,
                             border: borderColor,
                             highlight: {
-                                background: node.isMissing ? '#6a0000' : '#3d2b5e',
-                                border: node.isMissing ? '#ff6666' : '#f4e4c1'
+                                background: node.isMissing ? '#6a0000' : (node.isOrphan ? '#2a5a6a' : '#3d2b5e'),
+                                border: '#f4e4c1'
                             },
                             hover: {
-                                background: node.isMissing ? '#6a0000' : '#3d2b5e',
-                                border: node.isMissing ? '#ff6666' : '#d4af37'
+                                background: node.isMissing ? '#6a0000' : (node.isOrphan ? '#2a5a6a' : '#3d2b5e'),
+                                border: '#d4af37'
                             }
                         },
                         font: {
@@ -892,19 +922,26 @@ class BardGraphPanel {
                     const boxWidth = 120;
                     const boxHeight = 50;
 
-                    let bgColor = '#2d1b4e';
-                    let borderColor = '#9b4dca';
+                    let bgColor = '#2d1b4e';  // Default purple background
+                    let borderColor = '#9b4dca';  // Default purple border
                     let borderWidth = 2;
 
+                    // Background = warnings/issues
                     if (node.isMissing) {
-                        bgColor = '#4a0000';
-                        borderColor = '#ff4444';
-                        borderWidth = 3;
+                        bgColor = '#4a0000';  // Red background for missing
                     } else if (node.isOrphan) {
-                        borderColor = '#66d9ef';
+                        bgColor = '#1a3a4a';  // Dark cyan background for orphans
+                    }
+
+                    // Border = passage type (can combine with background warnings)
+                    if (node.isMissing) {
+                        borderColor = '#ff4444';  // Red border for missing
                         borderWidth = 3;
                     } else if (node.id === graphData.startPassage) {
-                        borderColor = '#d4af37';
+                        borderColor = '#d4af37';  // Gold for start
+                        borderWidth = 3;
+                    } else if (node.hasParams) {
+                        borderColor = '#66bb6a';  // Mint green for reusable
                         borderWidth = 3;
                     }
 
