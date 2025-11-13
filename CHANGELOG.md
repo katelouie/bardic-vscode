@@ -1,8 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2025-11-12
 
 ### Added
+
+- Make graph view UI (legend, stats, export buttons) more minimal and smaller with expanded stats count titles on hover.
+- Fixed empty graph bug.
+- Add live preview pane, command, and JSON variable input for state management. Matches VSCode theme colors. Choices are clickable.
+- Add folding for passages.
+- Add syntax highlighting for passage name parameters like :: PassageName(param)
 
 ## [0.4.1] - 2025-11-08
 
@@ -11,7 +17,6 @@
 - Truncate choice text to 60 chars for graph display (or 7 wrapped 12-char lines)
 - Make graph passage names with `.` in them ALSO wrap/break on underscores `_` if the underscore part of the name is too long
 - Parse parameterized passages in graph view
-- Make graph view UI (legend, stats, export buttons) more minimal and smaller with expanded stats count titles on hover.
 
 ## [0.4.0] - 2025-11-08
 

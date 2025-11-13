@@ -4,10 +4,7 @@
 // ============================================
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { CompilationResult, CompiledStory } from './compiler';
 
 export class BardGraphPanel {
     public static currentPanel: BardGraphPanel | undefined;
@@ -16,13 +13,13 @@ export class BardGraphPanel {
     private _disposables: vscode.Disposable[] = [];
     private _filePath: string;
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileContent: string, filePath: string) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, compilationResult: CompilationResult | string, filePath: string) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._filePath = filePath;
 
         // Set the HTML content
-        this._update(fileContent);
+        this._update(compilationResult);
 
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
@@ -41,13 +38,13 @@ export class BardGraphPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     }
 
-    public static createOrShow(extensionUri: vscode.Uri, fileContent: string, filePath: string) {
+    public static createOrShow(extensionUri: vscode.Uri, compilationResult: CompilationResult | string, filePath: string) {
         const column = vscode.ViewColumn.Two;
 
         // If we already have a panel, show it
         if (BardGraphPanel.currentPanel) {
             BardGraphPanel.currentPanel._panel.reveal(column);
-            BardGraphPanel.currentPanel._update(fileContent);
+            BardGraphPanel.currentPanel._update(compilationResult);
             return;
         }
 
@@ -63,23 +60,131 @@ export class BardGraphPanel {
             }
         );
 
-        BardGraphPanel.currentPanel = new BardGraphPanel(panel, extensionUri, fileContent, filePath);
+        BardGraphPanel.currentPanel = new BardGraphPanel(panel, extensionUri, compilationResult, filePath);
     }
 
-    public static updateIfVisible(fileContent: string) {
+    public static updateIfVisible(compilationResult: CompilationResult | string) {
         if (BardGraphPanel.currentPanel) {
-            BardGraphPanel.currentPanel._update(fileContent);
+            BardGraphPanel.currentPanel._update(compilationResult);
         }
     }
 
-    private async _update(fileContent: string) {
-        const graphData = await this._parseStory(fileContent);
-        this._panel.webview.html = this._getHtmlForWebview(graphData);
+    private async _update(compilationResult: CompilationResult | string) {
+        let graphData: any;
+
+        if (typeof compilationResult === 'string') {
+            // Legacy path: file content string (for backward compatibility)
+            graphData = await this._simpleParse(compilationResult);
+        } else {
+            // New path: CompilationResult
+            if (compilationResult.success && compilationResult.data) {
+                // Use pre-compiled CLI data
+                graphData = compilationResult.data;
+            } else {
+                // Show error or fall back to simple parser
+                if (compilationResult.error) {
+                    this._panel.webview.html = this._getErrorHtml(compilationResult.error);
+                    return;
+                } else {
+                    // Simple parser method - need to parse file
+                    const fs = require('fs');
+                    const content = await fs.promises.readFile(this._filePath, 'utf-8');
+                    graphData = await this._simpleParse(content);
+                }
+            }
+        }
+
+        // Sanitize graph data to only include what the webview needs
+        // This prevents vis.js from choking on arrays in the passages data
+        const sanitizedGraphData = {
+            nodes: graphData.nodes,
+            edges: graphData.edges,
+            startPassage: graphData.startPassage,
+            missingPassages: graphData.missingPassages || [],
+            orphanPassages: graphData.orphanPassages || []
+        };
+
+        console.log('[Bardic] Sanitized graph data structure:', {
+            nodeCount: sanitizedGraphData.nodes?.length,
+            edgeCount: sanitizedGraphData.edges?.length,
+            sampleNode: sanitizedGraphData.nodes?.[0],
+            sampleEdge: sanitizedGraphData.edges?.[0]
+        });
+
+        this._panel.webview.html = this._getHtmlForWebview(sanitizedGraphData);
+    }
+
+    private _getErrorHtml(error: any): string {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background: #1a0033;
+            color: #f4e4c1;
+            font-family: Georgia, serif;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .error-container {
+            max-width: 600px;
+            background: rgba(74, 0, 0, 0.5);
+            border: 2px solid #ff4444;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .error-title {
+            font-size: 24px;
+            color: #ff6666;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .error-hint {
+            font-size: 14px;
+            color: #ffcccc;
+            font-style: italic;
+            border-left: 3px solid #ff4444;
+            padding-left: 15px;
+            margin-top: 20px;
+        }
+        .error-location {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-title">⚠️ Compilation Error</div>
+        <div class="error-message">${error.message || 'Unknown error'}</div>
+        ${error.filePath && error.lineNumber ? `
+            <div class="error-location">
+                ${error.filePath}:${error.lineNumber}
+            </div>
+        ` : ''}
+        ${error.hint ? `
+            <div class="error-hint">
+                💡 ${error.hint}
+            </div>
+        ` : ''}
+    </div>
+</body>
+</html>`;
     }
 
     private async _parseStory(fileContent: string): Promise<any> {
-        // Just use the simple parser for now
-        // We can add CLI support later if needed
+        // Use the simple parser
         return this._simpleParse(fileContent);
     }
 
@@ -715,7 +820,31 @@ export class BardGraphPanel {
             // Read graph data from the JSON script tag
             const graphData = JSON.parse(document.getElementById('graph-data').textContent);
 
-            console.log('Graph data loaded:', graphData);
+            console.log('[Webview] Graph data loaded:', graphData);
+            console.log('[Webview] First node:', graphData.nodes?.[0]);
+            console.log('[Webview] First edge:', graphData.edges?.[0]);
+
+            // Check for arrays in nodes
+            if (graphData.nodes && graphData.nodes.length > 0) {
+                const firstNode = graphData.nodes[0];
+                console.log('[Webview] First node keys:', Object.keys(firstNode));
+                Object.keys(firstNode).forEach(function(key) {
+                    if (Array.isArray(firstNode[key])) {
+                        console.warn('[Webview] Found array in node property:', key, firstNode[key]);
+                    }
+                });
+            }
+
+            // Check for arrays in edges
+            if (graphData.edges && graphData.edges.length > 0) {
+                const firstEdge = graphData.edges[0];
+                console.log('[Webview] First edge keys:', Object.keys(firstEdge));
+                Object.keys(firstEdge).forEach(function(key) {
+                    if (Array.isArray(firstEdge[key])) {
+                        console.warn('[Webview] Found array in edge property:', key, firstEdge[key]);
+                    }
+                });
+            }
 
             // Update stats
             const realPassages = graphData.nodes.filter(function(n) { return !n.isMissing; }).length;
@@ -725,6 +854,7 @@ export class BardGraphPanel {
             document.getElementById('orphan-count').textContent = (graphData.orphanPassages || []).length;
 
             // Create nodes with Bardic styling
+            console.log('[Webview] About to create vis.DataSet for nodes');
             const nodes = new vis.DataSet(
                 graphData.nodes.map(function(node) {
                     let bgColor = '#2d1b4e';  // Default purple background
@@ -866,8 +996,17 @@ export class BardGraphPanel {
             );
 
             // Create network
+            console.log('[Webview] About to create vis.Network');
             const container = document.getElementById('mynetwork');
             const data = { nodes: nodes, edges: edges };
+
+            console.log('[Webview] data object:', {
+                nodesType: typeof nodes,
+                edgesType: typeof edges,
+                nodeCount: nodes.length,
+                edgeCount: edges.length
+            });
+
             const options = {
                 layout: {
                     hierarchical: {
@@ -907,7 +1046,17 @@ export class BardGraphPanel {
                 }
             };
 
-            const network = new vis.Network(container, data, options);
+            let network;
+            try {
+                console.log('[Webview] Creating vis.Network with options:', options);
+                network = new vis.Network(container, data, options);
+                console.log('[Webview] vis.Network created successfully!');
+            } catch (error) {
+                console.error('[Webview] ERROR creating vis.Network:', error);
+                console.error('[Webview] Error stack:', error.stack);
+                console.error('[Webview] Error message:', error.message);
+                throw error;
+            }
 
             // Handle node clicks
             network.on('click', function(params) {

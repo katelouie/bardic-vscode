@@ -8,11 +8,26 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
 const graphPanel_1 = require("./graphPanel");
+const pythonEnvironment_1 = require("./pythonEnvironment");
+const compiler_1 = require("./compiler");
+const previewPanel_1 = require("./previewPanel");
+const passageDetector_1 = require("./passageDetector");
+const foldingProvider_1 = require("./foldingProvider");
 // This is called when your extension is activated (user opens a .bard file)
-function activate(context) {
-    console.log('Bardic extension activated!');
+async function activate(context) {
+    console.log('[Bardic] Extension activated!');
+    // Initialize Python environment manager
+    const pythonManager = new pythonEnvironment_1.PythonEnvironmentManager();
+    await pythonManager.initialize();
+    // Initialize compiler
+    const compiler = new compiler_1.BardCompiler(pythonManager);
+    // Initialize passage detector
+    const passageDetector = new passageDetector_1.PassageDetector();
+    // Register folding provider for passages
+    const foldingProvider = vscode.languages.registerFoldingRangeProvider({ language: 'bard' }, new foldingProvider_1.BardFoldingProvider());
+    context.subscriptions.push(foldingProvider);
     // Register the "Show Graph" command
-    let showGraph = vscode.commands.registerCommand('bardic.showGraph', () => {
+    let showGraph = vscode.commands.registerCommand('bardic.showGraph', async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage('No active editor');
@@ -22,19 +37,184 @@ function activate(context) {
             vscode.window.showErrorMessage('This is not a .bard file');
             return;
         }
-        // Get the file content
-        const fileContent = editor.document.getText();
         const filePath = editor.document.uri.fsPath;
-        // Show the graph panel
-        graphPanel_1.BardGraphPanel.createOrShow(context.extensionUri, fileContent, filePath);
+        // Show progress indicator
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Compiling Bardic story...',
+            cancellable: false
+        }, async (progress) => {
+            // Compile the file
+            const result = await compiler.compile(filePath);
+            if (result.success || result.method === 'simple-parser') {
+                // Show graph with compiled data
+                graphPanel_1.BardGraphPanel.createOrShow(context.extensionUri, result, filePath);
+                // Show warnings if using simple parser
+                if (result.warnings && result.warnings.length > 0) {
+                    const warning = result.warnings[0];
+                    const action = warning.includes('not selected') ? 'Select Python Interpreter' : 'Install Bardic';
+                    vscode.window.showWarningMessage(warning, action, 'Learn More').then(async (selection) => {
+                        if (selection === 'Select Python Interpreter') {
+                            await vscode.commands.executeCommand('python.setInterpreter');
+                            // Wait a bit for Python extension to update
+                            setTimeout(async () => {
+                                const pythonPath = await pythonManager.getPythonPath();
+                                if (pythonPath) {
+                                    vscode.window.showInformationMessage('Python interpreter selected! Re-compiling graph...', 'OK');
+                                    const newResult = await compiler.compile(filePath);
+                                    graphPanel_1.BardGraphPanel.updateIfVisible(newResult);
+                                }
+                            }, 500);
+                        }
+                        else if (selection === 'Install Bardic') {
+                            vscode.window.showInformationMessage('To install Bardic, run: pip install bardic', 'Open Terminal').then(action => {
+                                if (action === 'Open Terminal') {
+                                    vscode.commands.executeCommand('workbench.action.terminal.new');
+                                }
+                            });
+                        }
+                        else if (selection === 'Learn More') {
+                            vscode.env.openExternal(vscode.Uri.parse('https://github.com/katelouie/bardic#installation'));
+                        }
+                    });
+                }
+            }
+            else {
+                // CLI or simple parser failed
+                if (result.error?.message && result.error.message.includes('Target passage')) {
+                    // Missing passage error - this shouldn't happen now (we fall back to simple parser)
+                    // But if it does, don't show error notification
+                    console.log('[Bardic] Missing passage target error - should have fallen back to simple parser');
+                }
+                else {
+                    // Real error - show to user
+                    const error = result.error;
+                    const message = error?.hint
+                        ? `${error.message}\n\n💡 ${error.hint}`
+                        : error?.message || 'Unknown error';
+                    if (error?.lineNumber) {
+                        // Offer to jump to line
+                        vscode.window.showErrorMessage(message, 'Go to Line').then(selection => {
+                            if (selection === 'Go to Line' && error.lineNumber) {
+                                const position = new vscode.Position(error.lineNumber - 1, 0);
+                                const selection = new vscode.Selection(position, position);
+                                editor.selection = selection;
+                                editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+                            }
+                        });
+                    }
+                    else {
+                        vscode.window.showErrorMessage(message);
+                    }
+                }
+            }
+        });
     });
-    // Auto-update graph when file is saved
-    vscode.workspace.onDidSaveTextDocument(document => {
-        if (document.languageId === 'bard') {
-            graphPanel_1.BardGraphPanel.updateIfVisible(document.getText());
+    // Listen for Python environment changes
+    pythonManager.onEnvironmentChanged(async () => {
+        const pythonPath = await pythonManager.getPythonPath();
+        console.log('[Bardic] Python environment changed to:', pythonPath);
+        if (graphPanel_1.BardGraphPanel.currentPanel) {
+            vscode.window.showInformationMessage('Python environment changed! Re-compiling graph...');
+            const editor = vscode.window.activeTextEditor;
+            if (editor && editor.document.languageId === 'bard') {
+                const filePath = editor.document.uri.fsPath;
+                const result = await compiler.compile(filePath);
+                graphPanel_1.BardGraphPanel.updateIfVisible(result);
+            }
         }
     });
-    context.subscriptions.push(showGraph);
+    // Auto-update graph on save
+    vscode.workspace.onDidSaveTextDocument(async (document) => {
+        if (document.languageId === 'bard' && graphPanel_1.BardGraphPanel.currentPanel) {
+            const result = await compiler.compile(document.uri.fsPath);
+            graphPanel_1.BardGraphPanel.updateIfVisible(result);
+        }
+    });
+    // Register the "Preview Passage" command
+    let previewPassage = vscode.commands.registerCommand('bardic.previewPassage', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor');
+            return;
+        }
+        if (editor.document.languageId !== 'bard') {
+            vscode.window.showErrorMessage('This is not a .bard file');
+            return;
+        }
+        // Find passage at cursor
+        const passageInfo = passageDetector.findPassageAtPosition(editor.document, editor.selection.active);
+        if (!passageInfo) {
+            vscode.window.showErrorMessage('Cursor not inside a passage. Place cursor inside a passage to preview it.');
+            return;
+        }
+        const filePath = editor.document.uri.fsPath;
+        // Get Python path
+        const pythonPath = await pythonManager.getPythonPath();
+        if (!pythonPath) {
+            vscode.window.showErrorMessage('No Python interpreter selected. Please select a Python interpreter to use preview.', 'Select Interpreter').then(async (selection) => {
+                if (selection === 'Select Interpreter') {
+                    await vscode.commands.executeCommand('python.setInterpreter');
+                }
+            });
+            return;
+        }
+        // Check if bardic installed
+        const hasBardic = await pythonManager.isBardicInstalled(pythonPath);
+        if (!hasBardic) {
+            vscode.window.showErrorMessage('Bardic not installed in selected Python environment. Preview requires bardic.', 'Install Bardic').then(selection => {
+                if (selection === 'Install Bardic') {
+                    vscode.window.showInformationMessage('To install Bardic, run: pip install bardic', 'Open Terminal').then(action => {
+                        if (action === 'Open Terminal') {
+                            vscode.commands.executeCommand('workbench.action.terminal.new');
+                        }
+                    });
+                }
+            });
+            return;
+        }
+        // Compile the story
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Compiling story for preview...',
+            cancellable: false
+        }, async (progress) => {
+            const result = await compiler.compile(filePath);
+            if (!result.success || !result.data) {
+                const error = result.error;
+                const message = error?.hint
+                    ? `${error.message}\n\n💡 ${error.hint}`
+                    : error?.message || 'Unknown compilation error';
+                vscode.window.showErrorMessage(`Cannot preview: ${message}`);
+                return;
+            }
+            // Ask for initial state (simple version - just JSON input)
+            const stateJson = await vscode.window.showInputBox({
+                prompt: 'Enter initial state as JSON (optional)',
+                placeHolder: '{"hp": 100, "gold": 50} or leave empty',
+                value: '{}',
+                validateInput: (value) => {
+                    if (!value || value.trim() === '') {
+                        return undefined; // Empty is ok
+                    }
+                    try {
+                        JSON.parse(value);
+                        return undefined;
+                    }
+                    catch (e) {
+                        return `Invalid JSON: ${e.message}`;
+                    }
+                }
+            });
+            if (stateJson === undefined) {
+                return; // User cancelled
+            }
+            const initialState = stateJson.trim() ? JSON.parse(stateJson) : {};
+            // Show preview
+            await previewPanel_1.PreviewPanel.createOrShow(context.extensionUri, passageInfo.name, result.data, pythonPath, initialState);
+        });
+    });
+    context.subscriptions.push(showGraph, previewPassage);
 }
 // This is called when your extension is deactivated
 function deactivate() { }

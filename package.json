@@ -2,7 +2,7 @@
   "name": "bardic",
   "displayName": "Bardic",
   "description": "Syntax highlighting for Bardic interactive fiction files",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "publisher": "katelouie",
   "repository": {
     "type": "git",
@@ -11,6 +11,9 @@
   "engines": {
     "vscode": "^1.80.0"
   },
+  "extensionDependencies": [
+    "ms-python.python"
+  ],
   "categories": [
     "Programming Languages",
     "Snippets"
@@ -35,6 +38,9 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile"
   },
+  "dependencies": {
+    "@vscode/python-extension": "^1.0.5"
+  },
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.80.0",
@@ -46,6 +52,11 @@
         "command": "bardic.showGraph",
         "title": "Bardic: Show Story Graph",
         "icon": "$(graph)"
+      },
+      {
+        "command": "bardic.previewPassage",
+        "title": "Bardic: Preview Passage",
+        "icon": "$(eye)"
       }
     ],
     "menus": {
@@ -54,6 +65,18 @@
           "when": "resourceLangId == bard",
           "command": "bardic.showGraph",
           "group": "navigation"
+        },
+        {
+          "when": "resourceLangId == bard",
+          "command": "bardic.previewPassage",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceLangId == bard",
+          "command": "bardic.previewPassage",
+          "group": "bardic"
         }
       ]
     },
@@ -86,6 +109,21 @@
     "configurationDefaults": {
       "[bard]": {
         "editor.wordWrap": "on"
+      }
+    },
+    "configuration": {
+      "title": "Bardic",
+      "properties": {
+        "bardic.compilationTimeout": {
+          "type": "number",
+          "default": 10000,
+          "description": "Timeout for CLI compilation in milliseconds (max 60000)"
+        },
+        "bardic.preferCLI": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefer CLI compilation over simple parser when available"
+        }
       }
     }
   }

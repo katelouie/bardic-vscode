@@ -1,7 +1,7 @@
 import random
 from game_logic.tarot import draw_cards
 
-@include shared/common.bard
+# @include shared/common.bard
 
 :: Start
 ~ count = 0

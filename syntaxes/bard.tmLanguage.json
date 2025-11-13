@@ -61,7 +61,7 @@
   "repository": {
     "passage-header": {
       "name": "markup.heading.bard",
-      "match": "^(::)\\s+([^/^\\n]+?)(?:\\s+(\\^\\w+))?(?:\\s*(//.*?))?$",
+      "match": "^(::)\\s+(\\w+)(\\([^)]*\\))?(?:\\s+(\\^\\w+))?(?:\\s*(//.*?))?$",
       "captures": {
         "1": {
           "name": "keyword.operator.passage.bard"
@@ -70,12 +70,59 @@
           "name": "entity.name.function.bard"
         },
         "3": {
-          "name": "constant.language.tag.bard"
+          "name": "meta.parameters.bard",
+          "patterns": [
+            {
+              "include": "#parameter-list"
+            }
+          ]
         },
         "4": {
+          "name": "constant.language.tag.bard"
+        },
+        "5": {
           "name": "comment.line.double-slash.bard"
         }
       }
+    },
+    "parameter-list": {
+      "begin": "\\(",
+      "end": "\\)",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.parameters.begin.bard"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.parameters.end.bard"
+        }
+      },
+      "patterns": [
+        {
+          "match": "(\\w+)(?:\\s*(=)\\s*([^,)]+))?",
+          "captures": {
+            "1": {
+              "name": "variable.parameter.bard"
+            },
+            "2": {
+              "name": "keyword.operator.assignment.bard"
+            },
+            "3": {
+              "name": "constant.numeric.bard",
+              "patterns": [
+                {
+                  "include": "source.python"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.parameter.bard"
+        }
+      ]
     },
     "python-block-new": {
       "name": "meta.embedded.block.python.bard",
