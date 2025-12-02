@@ -35,6 +35,20 @@ Visualize your entire story structure as an interactive graph:
 
 **To use:** Open any `.bard` file and click the graph icon in the editor toolbar, or run "Bardic: Show Story Graph" from the command palette.
 
+### Passage Live Preview
+
+Pre-test an individual passage's final rendering with injectable game state variables.
+
+![Live Preview](screenshots/livepreview.png)
+
+- You can navigate through the game like this, including selecting choices.
+- Shows active inserted game state values.
+- Allows you to Reset to the start of the story.
+
+**To use:** Position your cursor inside any passage and open the Command Palette. Type "Bardic live preview". It will also allow you inject any game state values as a JSON prior to rendering.
+
+### Code Snippets
+
 - **Code Snippets** for rapid development:
   - `if` - Simple if block
   - `ifel` - If-else block (no elif)
